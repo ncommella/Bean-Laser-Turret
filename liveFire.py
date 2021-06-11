@@ -41,7 +41,6 @@ def leftClick(event):
     x, y = event.x, event.y
     toggleAim()
     checkAim.toggle()
-    print("Clicked at: {}, {} - isAiming: {}".format(x,y,isAiming))
 
 # Mouse Movement Event Handler
 def motion(event):
