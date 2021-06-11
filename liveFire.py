@@ -17,7 +17,7 @@ tiltServo = board.get_pin('d:6:s')
 
 # Units based on servo range and multiplier for scaling.
 UNITS = 180
-MULT = 3
+MULT = 2
 
 #boolean to track aim mode and helper function
 isAiming = False
@@ -35,22 +35,74 @@ def move_tilt(a):
 move_pan(UNITS/2)
 move_tilt(UNITS/2)
 
-# Event Handlers
+# Left Mouse Event Handler
 def leftClick(event):
+    global checkAim
     x, y = event.x, event.y
     toggleAim()
+    checkAim.toggle()
     print("Clicked at: {}, {} - isAiming: {}".format(x,y,isAiming))
 
-
+# Mouse Movement Event Handler
 def motion(event):
+    global isAiming
+    global xEntry, yEntry
+
+
+    # check for aim mode
+    if (not isAiming):
+        return
+
+    # Get current X + Y values and display in entry boxes
     x, y = event.x, event.y
-    print("Aiming: {}, {}".format(x,y))
+    xEntry.delete(0, tkinter.END)
+    yEntry.delete(0, tkinter.END)
+    xEntry.insert(0, round(event.x/MULT))
+    yEntry.insert(0, round(180 - (event.y/MULT)))
+
+    # Move servo and sleep 15ms for smoothing
     move_pan(UNITS-(x/MULT))
     move_tilt(UNITS-(y/MULT))
+    sleep(0.15)
 
-# Display aim window
+def textAim(event):
+    global xEntry, yEntry
+    xText = xEntry.get()
+    yText = yEntry.get()
+    print("X Text: {} - Y Text: {}".format(xText, yText))
+    move_pan(180 - int(xText))
+    move_tilt(int(yText))
+
+# Init Tkinter Window w/ Title
 top = tkinter.Tk()
-frame = tkinter.Frame(top, width=(UNITS*MULT), height=(UNITS*MULT))
+top.title("Bean Laser Turret")
+top.bind('<Return>', textAim)
+
+# Value Frame on Left of Window
+valueFrame = tkinter.Frame(top)
+valueFrame.pack(side = tkinter.LEFT)
+
+# X Value
+xLabel = tkinter.Label(valueFrame, text="X Value: ")
+xEntry = tkinter.Entry(valueFrame)
+xLabel.pack()
+xEntry.pack()
+
+# Y Value
+yLabel = tkinter.Label(valueFrame, text="Y Value: ")
+yEntry = tkinter.Entry(valueFrame)
+yLabel.pack()
+yEntry.pack()
+
+# Aim Button
+aimButton = tkinter.Button(valueFrame, text="Aim", command=textAim)
+aimButton.pack()
+
+# checkButton
+checkAim = tkinter.Checkbutton(top, text="Aim Mode", command=toggleAim)
+
+# Aiming Frame
+frame = tkinter.Frame(top, bg="red", cursor="cross", width=(UNITS*MULT), height=(UNITS*MULT))
 frame.bind("<Button-1>", leftClick)
 
 # Aim Loop
@@ -60,6 +112,6 @@ while True:
     else:
         frame.unbind("<Motion>")
     frame.pack()
+    checkAim.pack()
     top.update_idletasks()
     top.update()
-    sleep(0.15)
